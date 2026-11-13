@@ -1,0 +1,23 @@
+# Perfil da Niimbot D110M (impressora pequena, etiquetas estreitas).
+# Valores iniciais a confirmar no primeiro teste real.
+model: Niimbot D110M
+dpi: 203                      # a confirmar
+printhead_mm: 12              # ~96 pontos
+label_widths_mm: [12, 15]
+label_sizes_mm:
+  - [12, 40]
+  - [15, 30]
+  - [12, 30]
+density: { min: 1, max: 3, default: 2 }
+grayscale: false              # só etiqueta comum (pontilhado 1 bit)
+connection: [bluetooth]
+status: não testado
+niimblue_model: D110_M        # a confirmar
+
+image:
+  regular:
+    clahe_clip: 2.5
+    gamma: 0.75
+    sharpen_percent: 100
+    output: dither
+    dither: atkinson

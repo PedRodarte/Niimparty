@@ -1,0 +1,29 @@
+# Perfil da Niimbot B2 Pro. Valores conferidos na especificação do projeto;
+# serão calibrados no teste de viabilidade (fase 3).
+model: Niimbot B2 Pro
+dpi: 300
+printhead_mm: 48              # largura útil da cabeça de impressão
+label_widths_mm: [20, 50]     # larguras de rolo aceitas
+label_sizes_mm:               # sugestões mostradas no assistente (largura x altura)
+  - [50, 80]
+  - [50, 50]
+  - [50, 30]
+density: { min: 1, max: 5, default: 3 }
+grayscale: true               # aceita papel fotográfico (tons de cinza)
+connection: [bluetooth, usb]
+status: em teste              # testado | em teste | não testado
+niimblue_model: B21_PRO       # nome do modelo para o niimblue-node (a confirmar)
+
+# Ajustes da pipeline de imagem por tipo de papel
+image:
+  photo:
+    clahe_clip: 2.0
+    gamma: 0.8
+    sharpen_percent: 60
+    output: gray8             # gray8 | dither
+  regular:
+    clahe_clip: 2.5
+    gamma: 0.75
+    sharpen_percent: 90
+    output: dither
+    dither: atkinson          # atkinson | floyd-steinberg
