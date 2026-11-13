@@ -74,11 +74,13 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("setup", help="refaz as perguntas de configuração")
     for name, help_text in (("preview", "gera etiquetas de exemplo"), ("validate", "valida os modelos"),
                             ("qr", "gera a placa A5 com os QR codes")):
-        p = sub.add_parser(name, help=help_text)
-        p.add_argument("extra", nargs=argparse.REMAINDER)
-    p = sub.add_parser("test", help="roda os testes (pytest)")
-    p.add_argument("extra", nargs=argparse.REMAINDER)
-    args = parser.parse_args(argv)
+        sub.add_parser(name, help=help_text, add_help=False)
+    sub.add_parser("test", help="roda os testes (pytest)", add_help=False)
+    args, unknown = parser.parse_known_args(argv)
+    if args.command in ("preview", "validate", "qr", "test"):
+        args.extra = unknown  # tudo depois do comando vai direto para a ferramenta, na mesma ordem
+    elif unknown:
+        parser.error(f"opções desconhecidas: {' '.join(unknown)}")
 
     if args.command in (None, "run"):
         return cmd_run(args)
