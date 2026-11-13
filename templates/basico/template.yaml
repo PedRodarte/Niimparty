@@ -1,0 +1,21 @@
+# Modelo básico: só a foto e uma linha de texto.
+# Copie esta pasta para criar o seu modelo (veja docs/CRIANDO-MODELOS.md).
+name: Básico
+description: Foto com uma linha de texto embaixo
+orientation: portrait          # portrait | landscape
+photo:
+  aspect: "4:5"                # 1:1 | 4:5 | 3:2 | full
+  margin_mm: 2
+texts:
+  - id: title
+    label: Texto da etiqueta
+    default: "{evento} · {data}"
+    font: InterDisplay-Bold
+    size_mm: 3.5
+guest_field:
+  enabled: true                # o organizador decide se pede o nome
+  label: Seu nome
+  format: "{nome}"
+  max_chars: 24
+  size_mm: 2.8
+ornaments: []
