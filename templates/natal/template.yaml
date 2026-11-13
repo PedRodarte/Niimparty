@@ -1,0 +1,46 @@
+name: Natal
+description: Moldura dupla com floco de neve, estrela e pinheiro
+orientation: portrait
+photo:
+  aspect: "4:5"
+  margin_mm: 2
+  corner_radius_mm: 1
+frame:
+  style: double              # solid | double | dashed | dotted
+  border_mm: 0.5
+  inset_mm: 1
+  corner_radius_mm: 2
+texts:
+  - id: title
+    label: Título
+    default: "Natal {ano}"
+    font: DMSerifDisplay-Regular
+    size_mm: 4.8
+  - id: subtitle
+    label: Subtítulo
+    default: "{evento}"
+    font: InterDisplay-SemiBold
+    size_mm: 2.6
+guest_field:
+  enabled: true
+  label: Seu nome
+  format: "com carinho, {nome}"
+  max_chars: 24
+  font: InterDisplay-Medium
+  size_mm: 2.5
+ornaments:
+  - file: ornaments/floco.png
+    position: photo-top-left
+    size_mm: 10
+    offset_mm: [2, 2]
+  - file: ornaments/estrela.png
+    position: photo-top-right
+    size_mm: 8
+    offset_mm: [2, 2]
+  - file: ornaments/pinheiro.png
+    position: photo-bottom-right
+    size_mm: 9
+    offset_mm: [5, 5]
+example:
+  event: Ceia de Natal
+  guest: Bia

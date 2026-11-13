@@ -1,0 +1,39 @@
+name: Corporativo
+description: Paisagem, com espaço para o logo da empresa
+orientation: landscape          # foto à esquerda, textos e logo à direita
+photo:
+  aspect: "4:5"
+  margin_mm: 2.5
+logo:
+  enabled: true                 # envie o logo pelo /admin (vira preto e branco)
+  position: top
+  height_mm: 8
+texts:
+  - id: title
+    label: Nome do evento
+    default: "{evento}"
+    font: InterDisplay-Bold
+    size_mm: 3.2
+  - id: subtitle
+    label: Data e local
+    default: "{data}"
+    font: InterDisplay-Medium
+    size_mm: 2.5
+guest_field:
+  enabled: true
+  label: Seu nome
+  format: "{nome}"
+  max_chars: 24
+  font: InterDisplay-SemiBold
+  size_mm: 2.8
+ornaments:                      # marcas de canto (a mesma imagem, girada)
+  - file: ornaments/canto.png
+    position: top-left
+    size_mm: 6
+  - file: ornaments/canto.png
+    position: bottom-right
+    size_mm: 6
+    rotate: 180
+example:
+  event: Encontro Anual
+  guest: Bia

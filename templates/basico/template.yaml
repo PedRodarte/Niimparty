@@ -19,3 +19,6 @@ guest_field:
   max_chars: 24
   size_mm: 2.8
 ornaments: []
+example:
+  event: Festa Exemplo
+  guest: Bia

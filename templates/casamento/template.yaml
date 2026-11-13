@@ -1,0 +1,43 @@
+name: Casamento
+description: Moldura fina, fonte serifada e alianças
+orientation: portrait
+photo:
+  aspect: "4:5"
+  margin_mm: 2
+  corner_radius_mm: 3
+frame:
+  style: solid
+  border_mm: 0.4
+  inset_mm: 1.2
+  corner_radius_mm: 3
+texts:
+  - id: title
+    label: Nomes do casal
+    default: "{evento}"
+    font: DMSerifDisplay-Regular
+    size_mm: 4.5
+  - id: subtitle
+    label: Data
+    default: "{data}"
+    font: InterDisplay-Medium
+    size_mm: 2.5
+    letter_spacing_mm: 0.4
+guest_field:
+  enabled: true
+  label: Seu nome
+  format: "com amor, {nome}"
+  max_chars: 24
+  font: InterDisplay-Medium
+  size_mm: 2.5
+ornaments:
+  - file: ornaments/aliancas.png
+    position: photo-bottom-right
+    size_mm: 11
+    offset_mm: [7, 4]
+  - file: ornaments/coracao.png
+    position: photo-top-left
+    size_mm: 7
+    offset_mm: [2, 2]
+example:
+  event: Ana & Leo
+  guest: Bia

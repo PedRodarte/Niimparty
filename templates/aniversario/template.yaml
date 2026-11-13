@@ -1,0 +1,42 @@
+name: Aniversário
+description: Título divertido no topo, balões e confete
+orientation: portrait
+photo:
+  aspect: "4:5"
+  margin_mm: 2
+  corner_radius_mm: 2
+frame:
+  style: dotted
+  border_mm: 0.6
+  inset_mm: 1
+texts:
+  - id: title
+    label: Título (no topo)
+    default: "Parabéns!"
+    font: LilitaOne-Regular
+    size_mm: 4.5
+    position: top
+  - id: subtitle
+    label: Linha de baixo
+    default: "{evento}"
+    font: InterDisplay-Bold
+    size_mm: 2.8
+guest_field:
+  enabled: true
+  label: Seu nome
+  format: "com carinho, {nome}"
+  max_chars: 24
+  font: InterDisplay-Medium
+  size_mm: 2.5
+ornaments:
+  - file: ornaments/baloes.png
+    position: photo-top-right
+    size_mm: 12
+    offset_mm: [6, 8]
+  - file: ornaments/confete.png
+    position: photo-bottom-left
+    size_mm: 14
+    offset_mm: [8, 5]
+example:
+  event: Aniversário da Lia
+  guest: Bia
