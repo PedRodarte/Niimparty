@@ -61,7 +61,10 @@ def cmd_setup(args: argparse.Namespace) -> int:
 
 
 def _tool(name: str, extra: list[str]) -> int:
-    return subprocess.call([sys.executable, str(ROOT / "tools" / f"{name}.py"), *extra], cwd=ROOT)
+    import os
+
+    env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+    return subprocess.call([sys.executable, str(ROOT / "tools" / f"{name}.py"), *extra], cwd=ROOT, env=env)
 
 
 def main(argv: list[str] | None = None) -> int:
