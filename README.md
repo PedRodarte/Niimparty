@@ -37,6 +37,7 @@ Sem app, sem cadastro, sem nuvem. Tudo roda num computador na sua rede.
 | Modelo | Status |
 | --- | --- |
 | Niimbot B2 Pro | em teste |
+| Niimbot D110M | não testado (perfil inicial para etiquetas 12 × 40 mm, só preto e branco) |
 | Outros modelos Niimbot | não testados: crie um perfil em `printers/profiles/` e conte como foi |
 | Sem impressora | modo simulado (PNG) |
 
@@ -44,7 +45,8 @@ A comunicação com a impressora usa bibliotecas da comunidade [NiimBlue](https:
 
 ## Requisitos
 
-- Python 3.12+
+- Python 3.12+ (o 3.11 também funciona)
+- Windows, macOS ou Linux
 - Computador com Bluetooth ou USB, na mesma rede Wi-Fi dos convidados
 - Impressora Niimbot e etiquetas (papel fotográfico recomendado para fotos)
 
@@ -53,24 +55,37 @@ A comunicação com a impressora usa bibliotecas da comunidade [NiimBlue](https:
 ```bash
 git clone https://github.com/<seu-usuario>/niimparty.git
 cd niimparty
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
 ```
 
-## Uso
+**Windows:** não precisa instalar nada além do Python. Dê dois cliques em `run.bat` ou rode no terminal:
+
+```bat
+run.bat
+```
+
+Na primeira vez ele cria o ambiente `.venv` e instala as dependências sozinho.
+
+**macOS / Linux (ou Windows com `make`):**
 
 ```bash
 make run
 ```
 
-Na primeira vez, o Niimparty pergunta o idioma, o nome e a data do evento, o modelo, os textos, se a etiqueta leva o nome do convidado, a impressora, o tamanho da etiqueta e o PIN do painel. Depois, tudo pode ser alterado em `http://<ip-do-computador>:8000/admin`.
+## Uso
 
-```bash
-make qr        # gera a placa A5 com os QR codes
-make preview   # gera etiquetas de exemplo de todos os modelos
-make test      # roda os testes
-```
+Na primeira vez, o Niimparty pergunta o idioma, o nome e a data do evento, o modelo, os textos, se a etiqueta leva o nome do convidado, a impressora, o tamanho da etiqueta, o tipo de papel e o PIN do painel. Ele grava as respostas em `config.yaml` e o PIN em `.env`. Para refazer as perguntas: `run.bat setup` ou `make setup`.
+
+Depois, o terminal mostra o endereço para abrir no celular (por exemplo `http://192.168.1.5:8000`). No Windows, na primeira vez, aceite o aviso do Firewall para **redes privadas**, senão os celulares não conseguem abrir a página.
+
+| Windows | make | Python direto | O que faz |
+| --- | --- | --- | --- |
+| `run.bat` | `make run` | `python niimparty.py run` | inicia a cabine |
+| `run.bat setup` | `make setup` | `python niimparty.py setup` | refaz as perguntas |
+| `run.bat qr` | `make qr` | `python niimparty.py qr` | gera a placa A5 com os QR codes |
+| `run.bat preview` | `make preview` | `python niimparty.py preview` | gera etiquetas de exemplo de todos os modelos |
+| `run.bat test` | `make test` | `python niimparty.py test` | roda os testes |
+
+Enquanto a impressora não chega, use o modo `mock`: cada etiqueta vira um PNG em `output/`.
 
 ## Criando um modelo
 
@@ -98,6 +113,29 @@ guest_field: { enabled: true, format: "com carinho, {nome}" }
 
 As fotos ficam só no computador que roda o Niimparty, nas pastas `uploads/` e `output/`, que nunca vão para o Git. Apague tudo pelo `/admin` depois do evento se não quiser guardar.
 
+## Estado do desenvolvimento
+
+| Fase | Situação |
+| --- | --- |
+| 1. MVP simulado (página, upload, pipeline, modelo `basico`, fila, `MockPrinter`, assistente) | pronta |
+| 2. Modelos de exemplo e ferramentas | em andamento |
+| 3. Impressão real (`NiimBluePrinter` / `ManualPrinter`) | aguardando teste com a impressora |
+| 4. Painel `/admin`, placa A5, `.zip` | a fazer |
+
+### Decisões adotadas
+
+Padrões da seção "Decisões em aberto" de [`docs/PROJETO.md`](docs/PROJETO.md), até alguém decidir diferente:
+
+- **Sistemas:** Windows, macOS e Linux (`run.bat` no Windows, `Makefile` nos outros, `niimparty.py` em todos).
+- **Etiqueta padrão:** 50 × 80 mm, retrato.
+- **Rede:** só Wi-Fi local; o túnel para 4G fica documentado como opcional.
+- **Cópias por foto:** uma (configurável em `copies`).
+- **Driver padrão:** `mock`, até o teste com a impressora real.
+- **Originais:** guardados em `uploads/`, apagáveis pelo `/admin`.
+- **Limite por aparelho:** conta as fotos *enviadas para impressão* por IP (padrão 3 a cada 10 minutos); só a prévia não conta.
+- **Falha da impressora** (sem papel, desligada): a fila pausa sozinha, a foto continua em primeiro lugar e o convidado vê a mensagem; o organizador retoma pelo `/admin`.
+- **Ornamentos em SVG** precisam do pacote opcional `cairosvg` (no Windows ele exige a biblioteca Cairo); PNG funciona sempre.
+
 ## Contribuindo
 
 Modelos novos, perfis de impressoras e traduções são muito bem-vindos. A especificação do projeto está em [`docs/PROJETO.md`](docs/PROJETO.md).
@@ -120,9 +158,7 @@ MIT
 ```bash
 git clone https://github.com/<your-user>/niimparty.git
 cd niimparty
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-make run
+make run          # Windows: run.bat
 ```
 
 Printer communication relies on the community [NiimBlue](https://printers.niim.blue/) libraries. First tested model: Niimbot B2 Pro. Unofficial project, not affiliated with NIIMBOT. MIT licensed.
