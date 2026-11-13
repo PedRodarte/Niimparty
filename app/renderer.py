@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import datetime as dt
 import logging
+import math
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,8 @@ log = logging.getLogger("niimparty.renderer")
 FONTS_DIR = ROOT / "assets" / "fonts"
 MIN_TEXT_MM = 2.5     # altura mínima de letra legível na impressão térmica
 MIN_STROKE_MM = 0.3   # traço mínimo
+REFERENCE_MM = 50.0   # os modelos são desenhados para etiquetas de 50 mm no lado curto
+ELONGATED = 2.5       # acima desta proporção, a etiqueta é uma tira: layout em paisagem
 
 
 @dataclass
@@ -121,7 +124,7 @@ def _text_width(text: str, font: ImageFont.FreeTypeFont, spacing_px: float) -> f
 class Row:
     kind: str                # text | logo
     height: int
-    text: str = ""
+    lines: list[str] = field(default_factory=list)
     spec: TextSpec | None = None
     font: ImageFont.FreeTypeFont | None = None
     cap_px: int = 0
@@ -133,45 +136,85 @@ class Row:
 # ------------------------------------------------------------ renderização
 
 
+def effective_orientation(template: Template, label_mm: tuple[float, float]) -> str:
+    """Modelos em paisagem viram retrato em etiquetas quase quadradas (ex.: 50 × 50),
+    onde não sobra largura para a coluna de texto ao lado da foto."""
+    a, b = sorted(label_mm)
+    if b / a >= ELONGATED:
+        return "landscape"  # tira estreita (ex.: 12 × 40): foto à esquerda, texto ao lado
+    if template.orientation == "landscape" and b / a < 1.3:
+        return "portrait"
+    return template.orientation
+
+
 def label_size_px(template: Template, label_mm: tuple[float, float], profile: PrinterProfile) -> tuple[int, int]:
     a, b = sorted(label_mm)
-    w_mm, h_mm = (a, b) if template.orientation == "portrait" else (b, a)
+    w_mm, h_mm = (a, b) if effective_orientation(template, label_mm) == "portrait" else (b, a)
     ppmm = profile.px_per_mm
     return round(w_mm * ppmm), round(h_mm * ppmm)
 
 
+_SEPARATORS = " ·-–—|•"
+
+
+def _two_lines(text: str, font: ImageFont.FreeTypeFont, spacing: float) -> list[str] | None:
+    """Melhor divisão em duas linhas (a mais equilibrada). Um separador
+    como '·' no ponto de quebra é removido."""
+    words = text.split(" ")
+    best, best_w = None, float("inf")
+    for i in range(1, len(words)):
+        a = " ".join(words[:i]).rstrip(_SEPARATORS)
+        b = " ".join(words[i:]).lstrip(_SEPARATORS)
+        if not a or not b:
+            continue
+        width = max(_text_width(a, font, spacing), _text_width(b, font, spacing))
+        if width < best_w:
+            best, best_w = [a, b], width
+    return best
+
+
 def _make_text_row(spec: TextSpec, text: str, template: Template, ppmm: float, max_w: int,
                    warnings: list[str]) -> Row | None:
-    if not text.strip():
+    text = text.strip()
+    if not text:
         return None
     if spec.uppercase:
         text = text.upper()
     path = str(resolve_font(spec.font, template))
     ratio = _cap_ratio(path)
     spacing = spec.letter_spacing_mm * ppmm
-    cap_px = spec.size_mm * ppmm
-    px = round(cap_px / ratio)
+    px = math.ceil(spec.size_mm * ppmm / ratio)
     font = _font(path, px)
-    width = _text_width(text, font, spacing)
+
+    lines = [text]
+    if _text_width(text, font, spacing) > max_w and spec.max_lines >= 2:
+        split = _two_lines(text, font, spacing)
+        if split:
+            lines = split
+
+    def widest() -> float:
+        return max(_text_width(line, font, spacing) for line in lines)
+
     shrunk = False
-    for _ in range(4):
+    for _ in range(6):
+        width = widest()
         if width <= max_w:
             break
         px = max(4, int(px * max_w / width) - 1)
         font = _font(path, px)
         spacing *= 0.9
-        width = _text_width(text, font, spacing)
         shrunk = True
     cap_px = px * ratio
     cap_mm = cap_px / ppmm
-    if cap_mm + 1e-6 < MIN_TEXT_MM:
+    if cap_mm + 0.05 < MIN_TEXT_MM:
         why = "foi reduzido para caber" if shrunk else "é pequeno"
         warnings.append(f"texto '{spec.id}' {why}: letra com {cap_mm:.1f} mm (mínimo {MIN_TEXT_MM} mm)")
     stem = font.getbbox("l")
     stem_mm = (stem[2] - stem[0]) / ppmm
-    if stem_mm + 1e-6 < MIN_STROKE_MM:
+    if stem_mm + 0.02 < MIN_STROKE_MM:
         warnings.append(f"texto '{spec.id}': traço da fonte com {stem_mm:.2f} mm (mínimo {MIN_STROKE_MM} mm)")
-    return Row(kind="text", height=round(cap_px * 1.6), text=text, spec=spec, font=font,
+    line_h = round(cap_px * 1.6)
+    return Row(kind="text", height=line_h * len(lines), lines=lines, spec=spec, font=font,
                cap_px=round(cap_px), spacing_px=spacing, align=spec.align)
 
 
@@ -242,8 +285,10 @@ def _draw_frame(canvas: Image.Image, frame: dict[str, Any], ppmm: float, warning
         _dashed_rect(d, box, lw, 0, round(1.0 * ppmm), dotted=True)
 
 
-def _load_ornament(path: Path, width_px: int) -> Image.Image | None:
-    """Devolve uma máscara de tinta (L: 255 = preto) do tamanho pedido."""
+def _load_ornament(path: Path, width_px: int, rotate: float = 0.0,
+                   flip: str = "") -> tuple[Image.Image, Image.Image] | None:
+    """Devolve (tons de cinza, opacidade) do tamanho pedido. Partes brancas
+    opacas cobrem a foto; partes transparentes deixam ver o que está embaixo."""
     if path.suffix.lower() == ".svg":
         try:
             import cairosvg  # type: ignore
@@ -256,16 +301,24 @@ def _load_ornament(path: Path, width_px: int) -> Image.Image | None:
     else:
         img = Image.open(path)
     img = img.convert("RGBA")
+    if flip == "horizontal":
+        img = ImageOps.mirror(img)
+    elif flip == "vertical":
+        img = ImageOps.flip(img)
+    if rotate:
+        img = img.rotate(rotate, expand=True, resample=Image.Resampling.BICUBIC)
     ratio = width_px / img.width
     img = img.resize((width_px, max(1, round(img.height * ratio))), Image.Resampling.LANCZOS)
-    lum = img.convert("L")
-    alpha = img.getchannel("A")
-    ink = Image.eval(lum, lambda v: 255 - v)
-    return Image.composite(ink, Image.new("L", img.size, 0), alpha)
+    # papel térmico: só preto ou branco (sem cinza nos enfeites)
+    lum = img.convert("L").point(lambda v: 255 if v >= 128 else 0)
+    alpha = img.getchannel("A").point(lambda v: 255 if v >= 128 else 0)
+    return lum, alpha
 
 
 def _place(position: str, size: tuple[int, int], label: tuple[int, int],
            photo_box: tuple[int, int, int, int], offset: tuple[float, float], margin: float) -> tuple[int, int]:
+    """Posição do ornamento. O deslocamento sempre aponta para dentro, e o
+    ornamento nunca sai da etiqueta."""
     w, h = size
     W, H = label
     ox, oy = offset
@@ -274,11 +327,15 @@ def _place(position: str, size: tuple[int, int], label: tuple[int, int],
         corner = position[len("photo-"):]
         cx = px0 if "left" in corner else px1
         cy = py0 if "top" in corner else py1
-        return round(cx - w / 2 + (ox if "left" in corner else -ox)), round(cy - h / 2 + (oy if "top" in corner else -oy))
-    x = {"left": margin + ox, "right": W - margin - w - ox}.get(
-        "left" if "left" in position else "right" if "right" in position else "center", (W - w) / 2 + ox)
-    y = {"top": margin + oy, "bottom": H - margin - h - oy}.get(
-        "top" if "top" in position else "bottom" if "bottom" in position else "middle", (H - h) / 2 + oy)
+        x = cx - w / 2 + (ox if "left" in corner else -ox)
+        y = cy - h / 2 + (oy if "top" in corner else -oy)
+    else:
+        x = {"left": margin + ox, "right": W - margin - w - ox}.get(
+            "left" if "left" in position else "right" if "right" in position else "center", (W - w) / 2 + ox)
+        y = {"top": margin + oy, "bottom": H - margin - h - oy}.get(
+            "top" if "top" in position else "bottom" if "bottom" in position else "middle", (H - h) / 2 + oy)
+    x = min(max(x, margin), max(margin, W - margin - w))
+    y = min(max(y, margin), max(margin, H - margin - h))
     return round(x), round(y)
 
 
@@ -317,17 +374,26 @@ def render_label(
     settings = profile.image_settings(paper)
     variables = template_vars(ctx)
 
-    margin = float(template.photo.get("margin_mm", 2)) * ppmm
-    frame = template.frame
+    # etiquetas menores que 50 mm de lado curto: tudo encolhe junto
+    small = min(1.0, min(label_mm) / REFERENCE_MM)
+    geo = max(0.5, small)  # margens e moldura encolhem menos
+
+    strip = max(label_mm) / min(label_mm) >= ELONGATED
+    margin = float(template.photo.get("margin_mm", 2)) * ppmm * geo
+    frame = dict(template.frame)
+    if strip and frame.get("style") == "double":
+        frame["style"] = "solid"  # numa tira, a moldura dupla rouba espaço demais
     if float(frame.get("border_mm", 0)) > 0:
-        frame_inner = (float(frame.get("inset_mm", 1)) + float(frame["border_mm"]) + 1.0) * ppmm
+        frame["inset_mm"] = float(frame.get("inset_mm", 1)) * geo
+        frame["corner_radius_mm"] = float(frame.get("corner_radius_mm", 0)) * geo
+        frame_inner = (frame["inset_mm"] + float(frame["border_mm"]) + 1.0 * geo) * ppmm
         if frame.get("style") == "double":
             frame_inner += (float(frame["border_mm"]) * 2 + 0.6) * ppmm
         margin = max(margin, frame_inner)
     cx0, cy0, cx1, cy1 = margin, margin, W - margin, H - margin
     content_w = cx1 - cx0
-    landscape = template.orientation == "landscape"
-    gap = round(1.2 * ppmm)
+    landscape = effective_orientation(template, label_mm) == "landscape"
+    gap = round(1.2 * ppmm * geo)
 
     aspect = imaging.parse_aspect(template.photo.get("aspect"))
     max_share = float(template.photo.get("max_share", 0.68))
@@ -349,48 +415,76 @@ def render_label(
         text_col_w = cx1 - (landscape_box[2] + gap)
 
     # ---- linhas de texto e logo
-    rows_top: list[Row] = []
-    rows_bottom: list[Row] = []
-
-    def add(row: Row | None, position: str) -> None:
-        if row is not None:
-            (rows_top if position == "top" else rows_bottom).append(row)
-
     logo_cfg = template.logo
-    logo_row: Row | None = None
-    if logo_cfg.get("enabled"):
-        lh = round(float(logo_cfg.get("height_mm", 8)) * ppmm)
-        logo_img = ctx.logo
-        if logo_img is None and logo_cfg.get("file"):
-            path = template.dir / str(logo_cfg["file"])
-            if path.is_file():
-                logo_img = Image.open(path)
-        if logo_img is not None:
-            img = _prepare_logo(logo_img, int(text_col_w), lh)
-            logo_row = Row(kind="logo", height=img.height, image=img)
-        elif ctx.placeholder_logo:
-            img = _placeholder_logo(min(int(text_col_w), lh * 3), lh, ppmm)
-            logo_row = Row(kind="logo", height=lh, image=img)
-    if logo_row and logo_cfg.get("position") == "top":
-        add(logo_row, "top")
-
-    for spec in template.texts:
-        raw = ctx.texts.get(spec.id, spec.default)
-        text = fill(str(raw), variables)[: spec.max_chars]
-        add(_make_text_row(spec, text, template, ppmm, int(text_col_w), warnings), spec.position)
+    logo_img = ctx.logo
+    if logo_cfg.get("enabled") and logo_img is None and logo_cfg.get("file"):
+        path = template.dir / str(logo_cfg["file"])
+        if path.is_file():
+            logo_img = Image.open(path)
 
     g = template.guest_field
     name = clean_guest_name(ctx.guest_name, g.max_chars)
+    texts: list[tuple[TextSpec, str]] = []
+    for spec in template.texts:
+        raw = ctx.texts.get(spec.id, spec.default)
+        texts.append((spec, fill(str(raw), variables)[: spec.max_chars]))
     if g.enabled and ctx.guest_enabled and name:
         gspec = TextSpec(id="guest", font=g.font, size_mm=g.size_mm, align=g.align, position=g.position)
-        add(_make_text_row(gspec, fill(g.format, {**variables, "nome": name, "name": name}), template, ppmm,
-                           int(text_col_w), warnings), g.position)
+        texts.append((gspec, fill(g.format, {**variables, "nome": name, "name": name})))
 
-    if logo_row and logo_cfg.get("position") != "top":
-        add(logo_row, "bottom")
+    if strip:
+        # tira estreita: no máximo 2 linhas (título + o resto unido por "·"), sem logo
+        texts = [(replace(s, max_lines=1), t) for s, t in texts if t.strip()]
+        if len(texts) > 2:
+            rest_spec = replace(texts[1][0], id="+".join(s.id for s, _ in texts[1:]), position="bottom")
+            texts = [texts[0], (rest_spec, " · ".join(t.strip() for _, t in texts[1:]))]
+        if logo_cfg.get("enabled"):
+            warnings.append("etiqueta estreita demais para o logo; ele foi omitido")
+        logo_cfg = {**logo_cfg, "enabled": False}
 
     def block_h(rows: list[Row]) -> int:
         return sum(r.height for r in rows) + round(0.3 * ppmm) * max(0, len(rows) - 1)
+
+    def build_rows(text_scale: float, row_warnings: list[str]) -> tuple[list[Row], list[Row]]:
+        top: list[Row] = []
+        bottom: list[Row] = []
+        logo_row: Row | None = None
+        if logo_cfg.get("enabled"):
+            lh = max(4, round(float(logo_cfg.get("height_mm", 8)) * ppmm * min(1.0, text_scale)))
+            if logo_img is not None:
+                img = _prepare_logo(logo_img, int(text_col_w), lh)
+                logo_row = Row(kind="logo", height=img.height, image=img)
+            elif ctx.placeholder_logo:
+                img = _placeholder_logo(min(int(text_col_w), lh * 3), lh, ppmm)
+                logo_row = Row(kind="logo", height=lh, image=img)
+        if logo_row and logo_cfg.get("position") == "top":
+            top.append(logo_row)
+        for spec, text in texts:
+            size = spec.size_mm * text_scale
+            if text_scale < 1 and spec.size_mm >= MIN_TEXT_MM and size < MIN_TEXT_MM and text_scale >= small:
+                size = MIN_TEXT_MM  # na escala da etiqueta, não passa do mínimo legível
+            row = _make_text_row(replace(spec, size_mm=size), text, template, ppmm, int(text_col_w), row_warnings)
+            if row is not None:
+                (top if spec.position == "top" else bottom).append(row)
+        if logo_row and logo_cfg.get("position") != "top":
+            bottom.append(logo_row)
+        return top, bottom
+
+    # a escala parte do tamanho da etiqueta; se o texto ainda tomar espaço
+    # demais da foto, encolhe mais (e avisa se ficar abaixo do legível)
+    content_h = cy1 - cy0
+    budget = content_h * (1.0 if landscape else 0.45)
+    text_scale = small
+    for _ in range(4):
+        row_warnings: list[str] = []
+        rows_top, rows_bottom = build_rows(text_scale, row_warnings)
+        used = block_h(rows_top) + block_h(rows_bottom) + (gap if rows_top and rows_bottom and landscape else 0)
+        if used <= budget or text_scale < 0.2:
+            break
+        text_scale *= max(0.5, budget / used) * 0.97
+    warnings += row_warnings
+    if text_scale < small - 1e-6:
+        warnings.append("pouco espaço: os textos foram reduzidos para a foto caber")
 
     top_h, bottom_h = block_h(rows_top), block_h(rows_bottom)
 
@@ -421,7 +515,6 @@ def render_label(
         assert landscape_box is not None
         photo_box = landscape_box
         col_x0, col_x1 = photo_box[2] + gap, cx1
-        content_h = cy1 - cy0
         sep_tb = gap if rows_top and rows_bottom else 0
         total = top_h + bottom_h + sep_tb
         start = cy0 + max(0, (content_h - total) / 2)
@@ -433,13 +526,17 @@ def render_label(
         for orn in template.ornaments:
             if orn.layer != layer:
                 continue
-            mask = _load_ornament(template.dir / orn.file, max(1, round(orn.size_mm * ppmm)))
-            if mask is None:
+            orn_scale = max(0.35, small)
+            loaded = _load_ornament(template.dir / orn.file, max(1, round(orn.size_mm * orn_scale * ppmm)),
+                                    orn.rotate, orn.flip)
+            if loaded is None:
                 warnings.append(f"ornamento {orn.file} não pôde ser carregado")
                 continue
-            xy = _place(orn.position, mask.size, (W, H), photo_box,
-                        (orn.offset_mm[0] * ppmm, orn.offset_mm[1] * ppmm), round(1.0 * ppmm))
-            canvas.paste(0, (*xy, xy[0] + mask.width, xy[1] + mask.height), mask)
+            img, alpha = loaded
+            xy = _place(orn.position, img.size, (W, H), photo_box,
+                        (orn.offset_mm[0] * orn_scale * ppmm, orn.offset_mm[1] * orn_scale * ppmm),
+                        round(1.0 * geo * ppmm))
+            canvas.paste(img, xy, alpha)
 
     _draw_frame(canvas, frame, ppmm, warnings)
     draw_ornaments("under")
@@ -478,16 +575,18 @@ def render_label(
                 x = {"left": col_x0, "right": col_x1 - lw}.get(row.align, (col_x0 + col_x1 - lw) / 2)
                 canvas.paste(row.image, (round(x), round(y)))
             elif row.font is not None:
-                width = _text_width(row.text, row.font, row.spacing_px)
-                x = {"left": col_x0, "right": col_x1 - width}.get(row.align, (col_x0 + col_x1 - width) / 2)
-                baseline = y + row.cap_px * 1.25
-                if row.spacing_px:
-                    cx = x
-                    for ch in row.text:
-                        d.text((cx, baseline), ch, font=row.font, fill=0, anchor="ls")
-                        cx += row.font.getlength(ch) + row.spacing_px
-                else:
-                    d.text((x, baseline), row.text, font=row.font, fill=0, anchor="ls")
+                line_h = row.height / max(1, len(row.lines))
+                for i, line in enumerate(row.lines):
+                    width = _text_width(line, row.font, row.spacing_px)
+                    x = {"left": col_x0, "right": col_x1 - width}.get(row.align, (col_x0 + col_x1 - width) / 2)
+                    baseline = y + i * line_h + row.cap_px * 1.25
+                    if row.spacing_px:
+                        cx = x
+                        for ch in line:
+                            d.text((cx, baseline), ch, font=row.font, fill=0, anchor="ls")
+                            cx += row.font.getlength(ch) + row.spacing_px
+                    else:
+                        d.text((x, baseline), line, font=row.font, fill=0, anchor="ls")
             y += row.height + sep
 
     draw_rows(rows_top, regions["top"])

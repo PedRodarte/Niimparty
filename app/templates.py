@@ -47,6 +47,7 @@ class TextSpec:
     max_chars: int = 40
     uppercase: bool = False
     letter_spacing_mm: float = 0.0
+    max_lines: int = 2
 
 
 @dataclass
@@ -68,6 +69,8 @@ class Ornament:
     size_mm: float = 8.0
     offset_mm: tuple[float, float] = (0.0, 0.0)
     layer: str = "over"  # over | under
+    rotate: float = 0.0  # graus, sentido anti-horário
+    flip: str = ""       # horizontal | vertical
 
 
 @dataclass
@@ -156,6 +159,7 @@ def parse_template(data: dict[str, Any], template_id: str, directory: Path) -> t
             max_chars=int(raw.get("max_chars", 40)),
             uppercase=bool(raw.get("uppercase", False)),
             letter_spacing_mm=_num(raw.get("letter_spacing_mm", 0), f"texts.{tid}.letter_spacing_mm", errors),
+            max_lines=int(raw.get("max_lines", 2)),
         )
         if spec.align not in ALIGNS:
             errors.append(f"texts.{tid}.align deve ser left, center ou right")
@@ -194,7 +198,13 @@ def parse_template(data: dict[str, Any], template_id: str, directory: Path) -> t
             size_mm=_num(raw.get("size_mm", 8), f"ornaments[{i}].size_mm", errors, 1),
             offset_mm=(float(off[0]), float(off[1])),
             layer=str(raw.get("layer", "over")),
+            rotate=_num(raw.get("rotate", 0), f"ornaments[{i}].rotate", errors, -360),
+            flip=str(raw.get("flip", "") or ""),
         )
+        if orn.layer not in ("over", "under"):
+            errors.append(f"ornaments[{i}].layer deve ser over ou under")
+        if orn.flip not in ("", "horizontal", "vertical"):
+            errors.append(f"ornaments[{i}].flip deve ser horizontal ou vertical")
         path = directory / orn.file
         if not path.is_file():
             errors.append(f"ornamento não encontrado: {orn.file}")

@@ -55,7 +55,7 @@ def test_regular_paper_outputs_1bit(basico, b2):
 def test_printer_without_grayscale_forces_dither(basico, d110m):
     res = render_label(basico, None, ctx(), (12, 40), d110m, "photo")
     assert res.image.mode == "1"
-    assert res.image.size == (96, 320)  # 12 × 40 mm a 203 dpi
+    assert res.image.size == (320, 96)  # 12 × 40 mm a 203 dpi, tira deitada
 
 
 def test_photo_box_has_template_aspect(basico, b2):
@@ -79,8 +79,8 @@ def test_text_override_from_config(basico, b2):
     assert not np.array_equal(np.asarray(a.image), np.asarray(b.image))
 
 
-def test_small_label_warns_about_legibility(basico, d110m):
-    res = render_label(basico, None, ctx(), (12, 40), d110m, "regular")
+def test_tiny_label_warns_about_legibility(basico, d110m):
+    res = render_label(basico, None, ctx(guest_name="Ana"), (12, 20), d110m, "regular")
     assert any("mínimo 2.5 mm" in w for w in res.warnings)
 
 
@@ -135,3 +135,20 @@ def test_load_template_strict_raises(tmp_path):
     (tmp_path / "x" / "template.yaml").write_text(yaml.safe_dump({"orientation": "torta"}), encoding="utf-8")
     with pytest.raises(TemplateError):
         load_template("x", templates_dir=tmp_path)
+
+
+def test_elongated_label_uses_landscape_strip(basico, d110m):
+    res = render_label(basico, None, ctx(), (12, 40), d110m, "regular")
+    w, h = res.image.size
+    assert w > h * 3
+    x0, y0, x1, y1 = res.photo_box
+    assert x1 < w / 2  # foto à esquerda, texto à direita
+
+
+def test_text_scales_down_on_smaller_labels(basico, b2):
+    big = render_label(basico, None, ctx(guest_name="Ana"), (50, 80), b2, "photo")
+    small = render_label(basico, None, ctx(guest_name="Ana"), (30, 50), b2, "photo")
+    # na etiqueta menor a foto continua ocupando boa parte da altura
+    for res in (big, small):
+        x0, y0, x1, y1 = res.photo_box
+        assert (y1 - y0) / res.image.height > 0.5
