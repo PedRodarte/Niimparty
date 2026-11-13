@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <title>Niimparty</title>
+  <link rel="stylesheet" href="/static/style.css?v=2">
+</head>
+<body>
+  <main class="app">
+    <header class="top">
+      <h1 id="event-name">&nbsp;</h1>
+      <p class="muted" data-i18n="welcome"></p>
+    </header>
+
+    <!-- 1. Início -->
+    <section id="screen-start" class="screen active">
+      <figure class="label-frame">
+        <img id="sample" alt="" src="/api/sample.png">
+      </figure>
+
+      <label id="guest-wrap" class="field hidden">
+        <span id="guest-label" data-i18n="your_name"></span>
+        <input id="guest-name" type="text" autocomplete="given-name" enterkeyhint="done">
+      </label>
+
+      <div class="actions">
+        <label class="btn btn-primary" role="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 4 7.2 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.2L15 4H9Zm3 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg>
+          <span data-i18n="take_photo"></span>
+          <input id="input-camera" type="file" accept="image/*" capture="environment" hidden>
+        </label>
+        <label class="btn btn-secondary" role="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Zm0 13h16l-5-6.5-3.8 4.8-2.7-3.3L4 17Zm4-8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z"/></svg>
+          <span data-i18n="choose_gallery"></span>
+          <input id="input-gallery" type="file" accept="image/*" hidden>
+        </label>
+      </div>
+    </section>
+
+    <!-- Carregando -->
+    <section id="screen-busy" class="screen" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p id="busy-text" class="big"></p>
+    </section>
+
+    <!-- 2. Prévia -->
+    <section id="screen-preview" class="screen">
+      <p class="big" data-i18n="preview_title"></p>
+      <figure class="label-frame">
+        <img id="preview" alt="">
+      </figure>
+      <div class="actions">
+        <button id="btn-print" class="btn btn-primary" type="button">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 3h10v4H7V3Zm-2 5h14a3 3 0 0 1 3 3v6h-4v4H6v-4H2v-6a3 3 0 0 1 3-3Zm3 7v4h8v-4H8Z"/></svg>
+          <span data-i18n="print"></span>
+        </button>
+        <button id="btn-change" class="btn btn-secondary" type="button" data-i18n="change_photo"></button>
+      </div>
+    </section>
+
+    <!-- 3. Fila -->
+    <section id="screen-queue" class="screen" aria-live="polite">
+      <div id="queue-badge" class="badge">…</div>
+      <p id="queue-text" class="big"></p>
+      <p id="queue-note" class="note hidden"></p>
+      <div class="actions">
+        <button id="btn-again" class="btn btn-secondary hidden" type="button" data-i18n="print_another"></button>
+      </div>
+    </section>
+
+    <!-- Erro -->
+    <section id="screen-error" class="screen" aria-live="assertive">
+      <div class="badge badge-error">!</div>
+      <p id="error-text" class="big"></p>
+      <div class="actions">
+        <button id="btn-retry" class="btn btn-primary" type="button" data-i18n="try_again"></button>
+      </div>
+    </section>
+  </main>
+  <script src="/static/app.js?v=2"></script>
+</body>
+</html>
