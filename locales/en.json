@@ -2,7 +2,6 @@
   "lang_name": "English",
   "html_lang": "en",
   "date_format": "%m/%d/%Y",
-
   "page_title": "Photo booth",
   "welcome": "Take a photo and it prints right away!",
   "take_photo": "Take photo",
@@ -21,7 +20,6 @@
   "print_another": "Print another photo",
   "try_again": "Try again",
   "paused": "Printing is paused. Your photo is still in line.",
-
   "error_not_image": "That file is not a photo. Please pick another image.",
   "error_too_big": "That photo is too big (maximum {mb} MB).",
   "error_rate_limit": "You have already printed {n} photos. Please wait a few minutes and try again.",
@@ -31,7 +29,6 @@
   "error_unknown": "Something went wrong with printing. Please find the host.",
   "error_network": "Can't reach the photo booth. Check that you're on the party Wi-Fi.",
   "error_expired": "This photo is no longer available. Please send it again.",
-
   "wiz_welcome": "Welcome to Niimparty! Let's set up your party (takes 1 minute).",
   "wiz_default": "default",
   "wiz_event_name": "Event name",
@@ -54,8 +51,16 @@
   "wiz_no": "n",
   "wiz_saved": "Done! Settings saved to config.yaml (the PIN is in .env).",
   "wiz_choose": "Choose a number",
-
   "run_open": "Open on your phone (same Wi-Fi): {url}",
   "run_admin": "Host panel: {url}/admin",
-  "run_stop": "Press Ctrl+C to stop."
+  "run_stop": "Press Ctrl+C to stop.",
+  "plate_step_wifi": "1. Join the Wi-Fi",
+  "plate_step_page": "2. Open the page",
+  "plate_network": "Network",
+  "plate_password": "Password",
+  "plate_scan": "Point your phone camera at the code",
+  "plate_footer": "No app, no sign-up. Your photo prints right away.",
+  "plate_ask_ssid": "Party Wi-Fi network name (Enter to skip the Wi-Fi QR)",
+  "plate_ask_password": "Wi-Fi password (stays only in .env)",
+  "plate_saved": "Sign saved to {path}"
 }

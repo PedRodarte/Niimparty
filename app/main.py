@@ -147,7 +147,7 @@ def create_app(cfg: dict[str, Any] | None = None, *, booth: Booth | None = None)
         g = b.template.guest_field
         return {
             "lang": b.lang,
-            "strings": {k: v for k, v in strings.items() if not k.startswith(("wiz_", "run_"))},
+            "strings": {k: v for k, v in strings.items() if not k.startswith(("wiz_", "run_", "plate_"))},
             "event": {"name": b.cfg["event"].get("name", ""), "date": b.cfg["event"].get("date", "")},
             "template": {"id": b.template.id, "name": b.template.name, "description": b.template.description},
             "guest": {"enabled": b.guest_enabled, "label": g.label or strings.get("your_name"),

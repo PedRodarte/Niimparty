@@ -2,7 +2,6 @@
   "lang_name": "Português (Brasil)",
   "html_lang": "pt-BR",
   "date_format": "%d/%m/%Y",
-
   "page_title": "Cabine de fotos",
   "welcome": "Tire uma foto e ela sai impressa na hora!",
   "take_photo": "Tirar foto",
@@ -21,7 +20,6 @@
   "print_another": "Imprimir outra foto",
   "try_again": "Tentar de novo",
   "paused": "A impressão está em pausa. Sua foto continua na fila.",
-
   "error_not_image": "Esse arquivo não é uma foto. Escolha outra imagem.",
   "error_too_big": "A foto é grande demais (máximo de {mb} MB).",
   "error_rate_limit": "Você já imprimiu {n} fotos. Espere uns minutinhos e tente de novo.",
@@ -31,7 +29,6 @@
   "error_unknown": "Algo deu errado com a impressão. Procure o organizador.",
   "error_network": "Sem conexão com a cabine. Confira se está no Wi-Fi da festa.",
   "error_expired": "Essa foto não está mais disponível. Envie de novo.",
-
   "wiz_welcome": "Bem-vindo ao Niimparty! Vamos configurar a sua festa (leva 1 minuto).",
   "wiz_default": "padrão",
   "wiz_event_name": "Nome do evento",
@@ -54,8 +51,16 @@
   "wiz_no": "n",
   "wiz_saved": "Pronto! Configuração salva em config.yaml (o PIN fica no .env).",
   "wiz_choose": "Escolha um número",
-
   "run_open": "Abra no celular (mesmo Wi-Fi): {url}",
   "run_admin": "Painel do organizador: {url}/admin",
-  "run_stop": "Para parar, aperte Ctrl+C."
+  "run_stop": "Para parar, aperte Ctrl+C.",
+  "plate_step_wifi": "1. Conecte no Wi-Fi",
+  "plate_step_page": "2. Abra a página",
+  "plate_network": "Rede",
+  "plate_password": "Senha",
+  "plate_scan": "Aponte a câmera do celular para o código",
+  "plate_footer": "Sem app e sem cadastro. Sua foto sai impressa na hora.",
+  "plate_ask_ssid": "Nome da rede Wi-Fi da festa (Enter para pular o QR do Wi-Fi)",
+  "plate_ask_password": "Senha do Wi-Fi (fica só no .env)",
+  "plate_saved": "Placa salva em {path}"
 }

@@ -88,6 +88,17 @@ Depois, o terminal mostra o endereço para abrir no celular (por exemplo `http:/
 
 Enquanto a impressora não chega, use o modo `mock`: cada etiqueta vira um PNG em `output/`.
 
+### Placa com os QR codes
+
+`run.bat qr` (ou `make qr`) gera `output/placa-qr.pdf`, uma folha A5 com o nome do evento, uma etiqueta de exemplo e dois QR codes: um conecta o celular ao Wi-Fi e o outro abre a página. Na primeira vez ele pergunta o nome e a senha do Wi-Fi e guarda no `.env`. Opções úteis:
+
+```bat
+run.bat qr --url http://192.168.0.50:8000   & rem endereço fixo (reserva de IP no roteador)
+run.bat qr --no-wifi                        & rem só o QR da página
+```
+
+O PDF contém a senha do Wi-Fi, por isso fica em `output/`, que nunca vai para o Git.
+
 ## Criando um modelo
 
 Copie uma pasta de `templates/`, edite o `template.yaml` e troque os ornamentos. O guia completo está em [`docs/CRIANDO-MODELOS.md`](docs/CRIANDO-MODELOS.md).
