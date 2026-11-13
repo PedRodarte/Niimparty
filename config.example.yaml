@@ -1,0 +1,40 @@
+# Exemplo de configuração. O `make run` (ou run.bat) cria o config.yaml
+# fazendo perguntas na primeira execução. Você também pode copiar este
+# arquivo para config.yaml e editar à mão.
+
+language: pt-BR            # pt-BR | en
+
+event:
+  name: "Minha Festa"
+  date: "2026-12-31"       # AAAA-MM-DD
+
+template: basico           # nome de uma pasta em templates/
+
+texts:                     # sobrescreve o "default" de cada texto do modelo (por id)
+  title: "{evento}"
+
+guest_name: false          # pedir o nome do convidado (se o modelo permitir)
+
+printer:
+  profile: b2_pro          # arquivo em printers/profiles/ (sem .yaml)
+  driver: mock             # mock | niimblue | manual
+  density: 3
+
+label:
+  width_mm: 50
+  height_mm: 80
+
+paper: photo               # photo (tons de cinza) | regular (pontilhado 1 bit)
+copies: 1
+
+server:
+  host: 0.0.0.0
+  port: 8000
+  public_url: ""           # opcional; senão usa http://<ip-local>:<porta>
+
+limits:
+  photos_per_device: 3
+  window_minutes: 10
+  max_upload_mb: 15
+
+keep_originals: true       # guardar as fotos originais em uploads/
