@@ -83,6 +83,7 @@ Depois, o terminal mostra o endereço para abrir no celular (por exemplo `http:/
 | `run.bat setup` | `make setup` | `python niimparty.py setup` | refaz as perguntas |
 | `run.bat qr` | `make qr` | `python niimparty.py qr` | gera a placa A5 com os QR codes |
 | `run.bat preview` | `make preview` | `python niimparty.py preview` | gera etiquetas de exemplo de todos os modelos |
+| `run.bat validate` | `make validate` | `python niimparty.py validate` | confere os modelos (erros e legibilidade) |
 | `run.bat test` | `make test` | `python niimparty.py test` | roda os testes |
 
 Enquanto a impressora não chega, use o modo `mock`: cada etiqueta vira um PNG em `output/`.
@@ -118,7 +119,7 @@ As fotos ficam só no computador que roda o Niimparty, nas pastas `uploads/` e `
 | Fase | Situação |
 | --- | --- |
 | 1. MVP simulado (página, upload, pipeline, modelo `basico`, fila, `MockPrinter`, assistente) | pronta |
-| 2. Modelos de exemplo e ferramentas | em andamento |
+| 2. Seis modelos de exemplo, `preview`, `validate` e guia de modelos | pronta (aguardando aprovação do visual) |
 | 3. Impressão real (`NiimBluePrinter` / `ManualPrinter`) | aguardando teste com a impressora |
 | 4. Painel `/admin`, placa A5, `.zip` | a fazer |
 
@@ -134,6 +135,7 @@ Padrões da seção "Decisões em aberto" de [`docs/PROJETO.md`](docs/PROJETO.md
 - **Originais:** guardados em `uploads/`, apagáveis pelo `/admin`.
 - **Limite por aparelho:** conta as fotos *enviadas para impressão* por IP (padrão 3 a cada 10 minutos); só a prévia não conta.
 - **Falha da impressora** (sem papel, desligada): a fila pausa sozinha, a foto continua em primeiro lugar e o convidado vê a mensagem; o organizador retoma pelo `/admin`.
+- **Etiquetas pequenas:** textos, enfeites e margens encolhem junto com a etiqueta; tiras compridas (ex.: 12 × 40 mm) ficam deitadas, com no máximo 2 linhas de texto e sem logo.
 - **Ornamentos em SVG** precisam do pacote opcional `cairosvg` (no Windows ele exige a biblioteca Cairo); PNG funciona sempre.
 
 ## Contribuindo
