@@ -155,8 +155,11 @@ class PrintQueue:
             raise KeyError(job_id)
         if job.status in ACTIVE:
             return self.position(job_id) or 1
+        # o relógio do Windows tem resolução de ~15 ms: garante ordem estritamente crescente
+        last = self._exec("SELECT MAX(queued_at) AS t FROM jobs").fetchone()["t"] or 0.0
+        queued_at = max(time.time(), last + 1e-4)
         self._exec("UPDATE jobs SET status=?, queued_at=?, error_code=NULL, finished_at=NULL WHERE id=?",
-                   (QUEUED, time.time(), job_id))
+                   (QUEUED, queued_at, job_id))
         self._notify(job_id)
         return self.position(job_id) or 1
 
