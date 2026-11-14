@@ -47,8 +47,14 @@ class Booth:
 
     def __init__(self, cfg: dict[str, Any], *, printer: Printer | None = None,
                  uploads_dir: Path = C.UPLOADS_DIR, output_dir: Path = C.OUTPUT_DIR,
-                 data_dir: Path = C.DATA_DIR):
+                 data_dir: Path = C.DATA_DIR, config_path: Path | None = C.CONFIG_PATH,
+                 admin_pin: str | None = None):
         self.cfg = cfg
+        self.config_path = config_path  # None: não grava (testes)
+        self.data_dir = data_dir
+        self.output_dir = output_dir
+        self._admin_pin = admin_pin
+        self.admin_sessions: dict[str, float] = {}
         self.uploads_dir = uploads_dir
         self.labels_dir = uploads_dir / "labels"
         self.originals_dir = uploads_dir / "originals"
@@ -59,6 +65,23 @@ class Booth:
         self.printer = printer or make_printer(cfg["printer"]["driver"], self.profile, cfg["printer"])
         self.queue = PrintQueue(data_dir / "niimparty.db", output_dir, self.printer, cfg.get("copies", 1))
         self._sample: bytes | None = None
+
+    @property
+    def logo_path(self) -> Path:
+        return self.data_dir / "logo.png"
+
+    def admin_pin(self) -> str:
+        return self._admin_pin if self._admin_pin is not None else C.admin_pin()
+
+    def apply_config(self, cfg: dict[str, Any]) -> None:
+        """Troca modelo, textos, etiqueta e papel sem reiniciar o servidor."""
+        template = load_template(cfg["template"])
+        profile = load_profile(cfg["printer"]["profile"])
+        self.cfg, self.template, self.profile = cfg, template, profile
+        self.printer.profile = profile
+        self._sample = None
+        if self.config_path is not None:
+            C.save_config(cfg, self.config_path)
 
     @property
     def lang(self) -> str:
@@ -72,18 +95,20 @@ class Booth:
     def guest_enabled(self) -> bool:
         return bool(self.cfg.get("guest_name")) and self.template.guest_field.enabled
 
-    def context(self, guest_name: str = "", placeholder_logo: bool = False) -> RenderContext:
+    def context(self, guest_name: str = "", placeholder_logo: bool = False,
+                cfg: dict[str, Any] | None = None, template: Template | None = None) -> RenderContext:
+        cfg = cfg or self.cfg
+        template = template or self.template
         logo = None
-        logo_path = C.DATA_DIR / "logo.png"
-        if self.template.logo.get("enabled") and logo_path.is_file():
-            logo = Image.open(logo_path)
+        if template.logo.get("enabled") and self.logo_path.is_file():
+            logo = Image.open(self.logo_path)
         return RenderContext(
-            event=self.cfg["event"].get("name", ""),
-            date=str(self.cfg["event"].get("date", "")),
+            event=cfg["event"].get("name", ""),
+            date=str(cfg["event"].get("date", "")),
             guest_name=guest_name,
-            texts={k: str(v) for k, v in (self.cfg.get("texts") or {}).items()},
-            guest_enabled=self.guest_enabled,
-            date_format=load_locale(self.lang).get("date_format", "%d/%m/%Y"),
+            texts={k: str(v) for k, v in (cfg.get("texts") or {}).items()},
+            guest_enabled=bool(cfg.get("guest_name")) and template.guest_field.enabled,
+            date_format=load_locale(cfg.get("language", "pt-BR")).get("date_format", "%d/%m/%Y"),
             logo=logo,
             placeholder_logo=placeholder_logo,
         )
@@ -133,6 +158,10 @@ def create_app(cfg: dict[str, Any] | None = None, *, booth: Booth | None = None)
     app = FastAPI(title="Niimparty", lifespan=lifespan, docs_url=None, redoc_url=None)
     app.mount("/static", StaticFiles(directory=str(C.WEB_DIR)), name="static")
 
+    from .admin import admin_router  # import tardio: o painel usa o Booth daqui
+
+    app.include_router(admin_router(lambda: state["booth"]))
+
     def B() -> Booth:
         return state["booth"]
 
@@ -147,7 +176,7 @@ def create_app(cfg: dict[str, Any] | None = None, *, booth: Booth | None = None)
         g = b.template.guest_field
         return {
             "lang": b.lang,
-            "strings": {k: v for k, v in strings.items() if not k.startswith(("wiz_", "run_", "plate_"))},
+            "strings": {k: v for k, v in strings.items() if not k.startswith(("wiz_", "run_", "plate_", "adm_"))},
             "event": {"name": b.cfg["event"].get("name", ""), "date": b.cfg["event"].get("date", "")},
             "template": {"id": b.template.id, "name": b.template.name, "description": b.template.description},
             "guest": {"enabled": b.guest_enabled, "label": g.label or strings.get("your_name"),

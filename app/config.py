@@ -107,3 +107,12 @@ def public_url(cfg: dict[str, Any]) -> str:
         return url.rstrip("/")
     port = int(cfg["server"].get("port", 8000))
     return f"http://{lan_ip()}:{port}"
+
+
+def slug(text: str) -> str:
+    """'Aniversário da Ana!' -> 'aniversario-da-ana' (para nomes de arquivo)."""
+    import re
+    import unicodedata
+
+    ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", ascii_text.lower()).strip("-")[:60]

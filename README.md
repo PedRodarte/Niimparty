@@ -88,6 +88,16 @@ Depois, o terminal mostra o endereço para abrir no celular (por exemplo `http:/
 
 Enquanto a impressora não chega, use o modo `mock`: cada etiqueta vira um PNG em `output/`.
 
+### Painel do organizador (`/admin`)
+
+Abra `http://<ip-do-computador>:8000/admin` no navegador do computador ou do celular (Android ou iPhone, no mesmo Wi-Fi) e digite o PIN. Não precisa instalar nada.
+
+- **Etiqueta:** escolha o modelo, mude o nome do evento, a data e os textos e veja a prévia ao vivo. Dá para testar com uma foto sua, que não é guardada nem impressa. Ao tocar em **Salvar**, os próximos convidados já recebem a etiqueta nova, sem reiniciar.
+- **Fila:** pause e retome a impressão, reimprima ou apague uma foto.
+- **Fotos:** baixe todas as fotos e etiquetas num `.zip` ou apague tudo depois do evento.
+
+As alterações ficam no `config.yaml`, só no seu computador. Depois de 5 PINs errados, o painel bloqueia por 1 minuto.
+
 ### Placa com os QR codes
 
 `run.bat qr` (ou `make qr`) gera `output/placa-qr.pdf`, uma folha A5 com o nome do evento, uma etiqueta de exemplo e dois QR codes: um conecta o celular ao Wi-Fi e o outro abre a página. Na primeira vez ele pergunta o nome e a senha do Wi-Fi e guarda no `.env`. Opções úteis:
@@ -131,8 +141,8 @@ As fotos ficam só no computador que roda o Niimparty, nas pastas `uploads/` e `
 | --- | --- |
 | 1. MVP simulado (página, upload, pipeline, modelo `basico`, fila, `MockPrinter`, assistente) | pronta |
 | 2. Seis modelos de exemplo, `preview`, `validate` e guia de modelos | pronta (aguardando aprovação do visual) |
-| 3. Impressão real (`NiimBluePrinter` / `ManualPrinter`) | aguardando teste com a impressora |
-| 4. Painel `/admin`, placa A5, `.zip` | a fazer |
+| 3. Impressão real (`NiimBluePrinter` / `ManualPrinter`) e calibração dos 16 tons de cinza | aguardando a impressora |
+| 4. Painel `/admin` (prévia ao vivo, fila, `.zip`), placa A5 | pronta; falta o teste de carga com 20 fotos |
 
 ### Decisões adotadas
 
@@ -142,6 +152,7 @@ Padrões da seção "Decisões em aberto" de [`docs/PROJETO.md`](docs/PROJETO.md
 - **Etiqueta padrão:** 50 × 80 mm, retrato.
 - **Rede:** só Wi-Fi local; o túnel para 4G fica documentado como opcional.
 - **Cópias por foto:** uma (configurável em `copies`).
+- **Painel:** a sessão dura 12 horas; o idioma, a impressora e o driver continuam no `run.bat setup`, porque trocar a impressora no meio do evento exige reiniciar.
 - **Driver padrão:** `mock`, até o teste com a impressora real.
 - **Originais:** guardados em `uploads/`, apagáveis pelo `/admin`.
 - **Limite por aparelho:** conta as fotos *enviadas para impressão* por IP (padrão 3 a cada 10 minutos); só a prévia não conta.
