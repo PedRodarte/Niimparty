@@ -259,6 +259,10 @@ def process_photo(
 def finalize_label(label: Image.Image, output: str) -> Image.Image:
     """Converte a etiqueta montada para o formato de saída da impressora."""
     gray = label.convert("L")
+    if output == "gray16":
+        # modo cinza das Niimbot com papel fotográfico: 16 níveis por ponto (4 bits),
+        # o calor de cada ponto define o tom. Sem retícula.
+        return gray.point(lambda v: round(v / 17) * 17)
     if output == "dither":
         # a foto já veio pontilhada; texto e ornamentos são limiarizados
         return gray.point(lambda v: 255 if v >= 128 else 0).convert("1", dither=Image.Dither.NONE)

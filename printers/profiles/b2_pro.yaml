@@ -2,7 +2,7 @@
 # serão calibrados no teste de viabilidade (fase 3).
 model: Niimbot B2 Pro
 dpi: 300
-printhead_mm: 48              # largura útil da cabeça de impressão
+printhead_mm: 48.77           # largura útil da cabeça: 576 pontos a 300 dpi (printers.niim.blue)
 label_widths_mm: [20, 50, 54] # larguras de rolo aceitas (54: só os 48 mm do meio recebem tinta)
 label_sizes_mm:               # sugestões mostradas no assistente (largura x altura)
   - [50, 80]
@@ -10,10 +10,10 @@ label_sizes_mm:               # sugestões mostradas no assistente (largura x al
   - [50, 30]
   - [54, 66]                   # rolos com moldura colorida já impressa
 density: { min: 1, max: 5, default: 3 }
-grayscale: true               # aceita papel fotográfico (tons de cinza)
+grayscale: true               # papel fotográfico: modo cinza real, 16 tons por ponto (sem retícula)
 connection: [bluetooth, usb]
 status: em teste              # testado | em teste | não testado
-niimblue_model: B21_PRO       # nome do modelo para o niimblue-node (a confirmar)
+niimblue_model: B2_PRO        # nome do modelo no NiimBlue (id 6912)
 
 # Ajustes da pipeline de imagem por tipo de papel
 image:
@@ -21,8 +21,8 @@ image:
     clahe_clip: 2.0
     gamma: 0.8
     sharpen_percent: 60
-    output: gray8             # gray8 | dither
-  regular:
+    output: gray16            # gray16 (papel fotográfico) | gray8 | dither
+  regular:                    # papel térmico comum: só preto ou branco, então pontilha
     clahe_clip: 2.5
     gamma: 0.75
     sharpen_percent: 90

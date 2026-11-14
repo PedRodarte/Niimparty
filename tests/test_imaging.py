@@ -121,3 +121,11 @@ def test_finalize_label_modes():
     img = Image.new("L", (10, 10), 200)
     assert imaging.finalize_label(img, "gray8").mode == "L"
     assert imaging.finalize_label(img, "dither").mode == "1"
+
+
+def test_gray16_has_at_most_16_levels():
+    ramp = Image.linear_gradient("L").resize((256, 64))
+    out = imaging.finalize_label(ramp, "gray16")
+    assert out.mode == "L"
+    assert len(set(out.getdata())) <= 16
+    assert out.getpixel((0, 0)) in (0, 255) and abs(out.getpixel((0, 63)) - 255) <= 17

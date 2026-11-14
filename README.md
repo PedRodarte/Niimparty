@@ -24,7 +24,7 @@ Sem app, sem cadastro, sem nuvem. Tudo roda num computador na sua rede.
 - **Crie seu modelo sem programar:** uma pasta com um arquivo `template.yaml` e as imagens
 - Textos, data e nome do convidado configuráveis
 - Etiquetas de vários tamanhos, em retrato ou paisagem
-- Tratamento de foto pensado para impressão térmica (tons de cinza ou pontilhado)
+- Tratamento de foto pensado para impressão térmica: no papel fotográfico, tons de cinza de verdade (16 tons por ponto, sem retícula); no papel comum, pontilhado
 - Página leve com botões grandes, que funciona em qualquer celular
 - Prévia da etiqueta antes de imprimir e fila com status em tempo real
 - Painel `/admin` com PIN: trocar modelo e textos com prévia ao vivo, pausar a fila, reimprimir, baixar todas as fotos
@@ -147,6 +147,7 @@ Padrões da seção "Decisões em aberto" de [`docs/PROJETO.md`](docs/PROJETO.md
 - **Limite por aparelho:** conta as fotos *enviadas para impressão* por IP (padrão 3 a cada 10 minutos); só a prévia não conta.
 - **Falha da impressora** (sem papel, desligada): a fila pausa sozinha, a foto continua em primeiro lugar e o convidado vê a mensagem; o organizador retoma pelo `/admin`.
 - **Etiquetas pequenas:** textos, enfeites e margens encolhem junto com a etiqueta; tiras compridas (ex.: 12 × 40 mm) ficam deitadas, com no máximo 2 linhas de texto e sem logo.
+- **Papel fotográfico:** as Niimbot com modo cinza (B2 Pro, B21 Pro) aquecem cada ponto em 16 intensidades, então a foto vai em 16 tons de cinza, sem pontilhado. A curva de tons ainda será calibrada com uma etiqueta de teste na impressora real.
 - **Rolos com moldura já impressa:** a moldura nunca é impressa, só a foto na janela e o texto na faixa; as medidas do modelo `moldura-colorida-54x66` vieram da foto do anúncio e serão conferidas com régua no rolo de verdade.
 - **Ornamentos em SVG** precisam do pacote opcional `cairosvg` (no Windows ele exige a biblioteca Cairo); PNG funciona sempre.
 

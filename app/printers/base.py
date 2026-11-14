@@ -55,7 +55,7 @@ class PrinterProfile:
             "clahe_clip": 2.0,
             "gamma": 0.8,
             "sharpen_percent": 70,
-            "output": "gray8" if paper == "photo" else "dither",
+            "output": "gray16" if paper == "photo" else "dither",
             "dither": "atkinson",
         }
         settings = {**defaults, **self.image.get(paper, self.image.get("regular", {}))}
