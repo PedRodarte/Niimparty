@@ -86,7 +86,7 @@ logo:                          # espaço para o logo do organizador (opcional)
 
 example:                       # textos de exemplo para as prévias (sem dados reais!)
   event: Turma 2026
-  guest: Bia
+  guest: Convidado
 ```
 
 ## Variáveis
@@ -147,6 +147,28 @@ Os enfeites nunca saem da etiqueta: se a posição ficar para fora, eles são em
 ### `frame` e `logo`
 
 Veja o exemplo completo acima. O logo é enviado pelo organizador e convertido para preto e branco automaticamente.
+
+### Etiquetas com moldura já impressa
+
+Alguns rolos já vêm com moldura colorida e uma janela branca para a foto (ex.: 54 × 66 mm). Nesse caso, diga ao Niimparty onde fica cada coisa, em mm, a partir do canto de cima à esquerda, com a etiqueta em pé. O modelo `moldura-colorida-54x66` é um exemplo pronto.
+
+```yaml
+label_mm: [54, 66]                    # o modelo só serve para este tamanho
+preprinted:
+  window_mm: [5.8, 9.0, 42.4, 42.4]   # janela branca: [x, y, largura, altura]
+  preview_colors: ["#F4C7C9"]         # cor do papel, só para a prévia na tela
+photo:
+  aspect: "1:1"
+  box_mm: [6.4, 9.6, 41.2, 41.2]      # onde a foto é impressa
+text_box_mm: [5, 52.4, 44, 12.6]      # onde vão os textos
+max_rows: 2                           # da 2ª linha em diante, os textos se juntam com "·"
+```
+
+- Meça o seu rolo com uma régua: as medidas dos anúncios são aproximadas.
+- Deixe a foto uns 0,5 mm para dentro da janela, porque o papel pode andar um pouco.
+- A moldura colorida nunca é impressa. A cor aparece só na prévia do celular e na placa.
+- O preto sai bem sobre cores claras, então dá para imprimir texto na faixa colorida.
+- Se a etiqueta for mais larga que a cabeça de impressão (48 mm na B2 Pro), só a parte do meio recebe tinta, e o `validate` avisa se a foto ou o texto passarem disso.
 
 ## Fontes
 

@@ -36,4 +36,4 @@ ornaments:                      # marcas de canto (a mesma imagem, girada)
     rotate: 180
 example:
   event: Encontro Anual
-  guest: Bia
+  guest: Convidado

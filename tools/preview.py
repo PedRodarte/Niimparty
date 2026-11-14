@@ -28,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
 from app.imaging import load_image  # noqa: E402
 from app.printers import load_profile  # noqa: E402
-from app.renderer import FONTS_DIR, RenderContext, placeholder_photo, render_label  # noqa: E402
+from app.renderer import FONTS_DIR, RenderContext, paper_preview, placeholder_photo, render_label  # noqa: E402
 from app.templates import TemplateError, list_templates, load_template  # noqa: E402
 
 OUT = ROOT / "previews"
@@ -54,7 +54,7 @@ def context_for(tpl, date_format: str) -> RenderContext:
     return RenderContext(
         event=str(ex.get("event", "Nome do Evento")),
         date=str(ex.get("date", SAMPLE_DATE)),
-        guest_name=str(ex.get("guest", "Bia")),
+        guest_name=str(ex.get("guest", "Convidado")),
         guest_enabled=True,
         date_format=date_format,
         placeholder_logo=True,
@@ -111,18 +111,22 @@ def main(argv: list[str] | None = None) -> int:
             continue
         ctx = context_for(tpl, args.lang_date)
         print(f"• {tpl.name} ({name})")
-        for prof_id, size, paper in combos:
+        tpl_combos = combos
+        if tpl.label_mm and combos is DEFAULT_SET:  # modelo feito para um tamanho só
+            tpl_combos = [("b2_pro", tpl.label_mm, "photo"), ("b2_pro", tpl.label_mm, "regular")]
+        for prof_id, size, paper in tpl_combos:
             profile = profiles.setdefault(prof_id, load_profile(prof_id))
             res = render_label(tpl, photo, ctx, size, profile, paper)
             tag = f"{size[0]:g}x{size[1]:g}"
             path = OUT / f"{name}_{tag}_{paper}_{prof_id}.png"
-            res.image.save(path)
+            shown = paper_preview(res.image, tpl)
+            shown.save(path)
             note = "" if not res.warnings else "  ⚠ " + "; ".join(res.warnings)
             print(f"    {tag} {paper:<7} {prof_id:<7} -> {path.relative_to(ROOT)}{note}")
-            if (prof_id, size, paper) == combos[0]:
-                sheet_items.append((tpl.name, res.image))
+            if (prof_id, size, paper) == tpl_combos[0]:
+                sheet_items.append((tpl.name, shown))
                 if not args.photo and combos is DEFAULT_SET:
-                    thumb = res.image.convert("L")
+                    thumb = shown.copy()
                     thumb.thumbnail((360, 360), Image.Resampling.LANCZOS)
                     thumb.save(tpl.preview_path, optimize=True)
 

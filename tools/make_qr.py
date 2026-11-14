@@ -42,7 +42,7 @@ from reportlab.pdfgen import canvas as pdfcanvas  # noqa: E402
 from app import config as C  # noqa: E402
 from app.i18n import load_locale  # noqa: E402
 from app.printers import load_profile  # noqa: E402
-from app.renderer import FONTS_DIR, RenderContext, placeholder_photo, render_label  # noqa: E402
+from app.renderer import FONTS_DIR, RenderContext, paper_preview, placeholder_photo, render_label  # noqa: E402
 from app.templates import load_template  # noqa: E402
 
 
@@ -123,7 +123,7 @@ def sample_label(cfg: dict) -> Image.Image:
     ctx = RenderContext(
         event=cfg["event"].get("name", ""),
         date=str(cfg["event"].get("date", "")),
-        guest_name="Bia" if cfg.get("guest_name") else "",
+        guest_name="Convidado" if cfg.get("guest_name") else "",
         texts={k: str(v) for k, v in (cfg.get("texts") or {}).items()},
         guest_enabled=bool(cfg.get("guest_name")),
         date_format=load_locale(lang).get("date_format", "%d/%m/%Y"),
@@ -131,7 +131,7 @@ def sample_label(cfg: dict) -> Image.Image:
     )
     label_mm = (float(cfg["label"]["width_mm"]), float(cfg["label"]["height_mm"]))
     res = render_label(template, placeholder_photo((1200, 1500)), ctx, label_mm, profile, cfg.get("paper", "photo"))
-    return res.image.convert("RGB")
+    return paper_preview(res.image, template)
 
 
 def draw_plate(path: Path, cfg: dict, url: str, wifi: tuple[str, str, str] | None) -> None:
