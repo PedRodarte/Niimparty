@@ -124,7 +124,11 @@ class Wizard:
         cfg["printer"]["driver"] = driver
 
         sizes = [f"{a:g}x{b:g}" for a, b in (profile.label_sizes_mm or [[50, 80]])]
-        while True:
+        if tpl.label_mm:  # modelo feito para um rolo específico (ex.: moldura já impressa)
+            w, h = tpl.label_mm
+            self.say(S["wiz_label_fixed"].format(size=f"{w:g}x{h:g}"))
+            cfg["label"] = {"width_mm": w, "height_mm": h}
+        while not tpl.label_mm:
             raw = self.ask(f"{S['wiz_label']} ({', '.join(sizes)})", sizes[0]).lower().replace(" ", "")
             m = re.fullmatch(r"(\d+(?:[.,]\d+)?)[x×*](\d+(?:[.,]\d+)?)", raw)
             if m:

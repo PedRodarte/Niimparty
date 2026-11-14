@@ -3,11 +3,12 @@
 model: Niimbot B2 Pro
 dpi: 300
 printhead_mm: 48              # largura útil da cabeça de impressão
-label_widths_mm: [20, 50]     # larguras de rolo aceitas
+label_widths_mm: [20, 50, 54] # larguras de rolo aceitas (54: só os 48 mm do meio recebem tinta)
 label_sizes_mm:               # sugestões mostradas no assistente (largura x altura)
   - [50, 80]
   - [50, 50]
   - [50, 30]
+  - [54, 66]                   # rolos com moldura colorida já impressa
 density: { min: 1, max: 5, default: 3 }
 grayscale: true               # aceita papel fotográfico (tons de cinza)
 connection: [bluetooth, usb]

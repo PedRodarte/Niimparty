@@ -20,7 +20,7 @@ Sem app, sem cadastro, sem nuvem. Tudo roda num computador na sua rede.
 
 ## Recursos
 
-- **Modelos prontos:** básico, Natal, aniversário, casamento, chá de bebê e corporativo (com logo)
+- **Modelos prontos:** básico, Natal, aniversário, casamento, chá de bebê, corporativo (com logo) e moldura colorida (para rolos com moldura já impressa, ex.: 54 × 66 mm)
 - **Crie seu modelo sem programar:** uma pasta com um arquivo `template.yaml` e as imagens
 - Textos, data e nome do convidado configuráveis
 - Etiquetas de vários tamanhos, em retrato ou paisagem
@@ -147,6 +147,7 @@ Padrões da seção "Decisões em aberto" de [`docs/PROJETO.md`](docs/PROJETO.md
 - **Limite por aparelho:** conta as fotos *enviadas para impressão* por IP (padrão 3 a cada 10 minutos); só a prévia não conta.
 - **Falha da impressora** (sem papel, desligada): a fila pausa sozinha, a foto continua em primeiro lugar e o convidado vê a mensagem; o organizador retoma pelo `/admin`.
 - **Etiquetas pequenas:** textos, enfeites e margens encolhem junto com a etiqueta; tiras compridas (ex.: 12 × 40 mm) ficam deitadas, com no máximo 2 linhas de texto e sem logo.
+- **Rolos com moldura já impressa:** a moldura nunca é impressa, só a foto na janela e o texto na faixa; as medidas do modelo `moldura-colorida-54x66` vieram da foto do anúncio e serão conferidas com régua no rolo de verdade.
 - **Ornamentos em SVG** precisam do pacote opcional `cairosvg` (no Windows ele exige a biblioteca Cairo); PNG funciona sempre.
 
 ## Contribuindo

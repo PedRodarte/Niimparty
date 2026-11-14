@@ -34,7 +34,7 @@ from .i18n import load_locale
 from .imaging import InvalidImage, load_image
 from .printers import Printer, load_profile, make_printer
 from .queue import DONE, ERROR, PrintQueue
-from .renderer import RenderContext, clean_guest_name, render_label
+from .renderer import RenderContext, clean_guest_name, paper_preview, render_label
 from .templates import Template, load_template
 
 log = logging.getLogger("niimparty")
@@ -97,7 +97,7 @@ class Booth:
             sample_name = "Ana" if self.guest_enabled else ""
             result = self.render(None, sample_name, placeholder_logo=False)
             buf = io.BytesIO()
-            result.image.convert("L").save(buf, "PNG")
+            paper_preview(result.image, self.template).save(buf, "PNG")
             self._sample = buf.getvalue()
         return self._sample
 
@@ -193,7 +193,17 @@ def create_app(cfg: dict[str, Any] | None = None, *, booth: Booth | None = None)
         job = B().queue.get(job_id)
         if not job or not Path(job.label_path).is_file():
             raise HTTPException(404)
-        return FileResponse(job.label_path, media_type="image/png")
+        b = B()
+        if not b.template.preprinted:
+            return FileResponse(job.label_path, media_type="image/png")
+
+        def simulate() -> bytes:  # moldura colorida só na tela; a impressora recebe o original
+            with Image.open(job.label_path) as im:
+                buf = io.BytesIO()
+                paper_preview(im, b.template).save(buf, "PNG")
+                return buf.getvalue()
+
+        return Response(await run_in_threadpool(simulate), media_type="image/png")
 
     @app.post("/print/{job_id}")
     async def print_job(job_id: str, request: Request):

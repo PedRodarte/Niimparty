@@ -152,3 +152,43 @@ def test_text_scales_down_on_smaller_labels(basico, b2):
     for res in (big, small):
         x0, y0, x1, y1 = res.photo_box
         assert (y1 - y0) / res.image.height > 0.5
+
+
+# ------------------------------------------------------------ etiqueta com moldura já impressa
+
+
+def test_preprinted_template_fixed_layout(b2):
+    from app.renderer import paper_preview
+    from app.templates import load_template
+
+    tpl = load_template("moldura-colorida-54x66")
+    assert tpl.fixed_layout and tpl.label_mm == (54.0, 66.0)
+    ctx = RenderContext(event="Festa", date="2026-12-24", guest_name="Convidado", guest_enabled=True)
+    res = render_label(tpl, None, ctx, (54, 66), b2, "photo")
+    ppmm = b2.px_per_mm
+    x, y, w, h = tpl.photo["box_mm"]
+    assert res.photo_box == (round(x * ppmm), round(y * ppmm), round((x + w) * ppmm), round((y + h) * ppmm))
+    assert res.warnings == []
+    # nada é impresso na moldura colorida (fora da janela e da faixa de texto)
+    img = res.image.convert("L")
+    assert img.getpixel((round(2 * ppmm), round(2 * ppmm))) == 255
+    # a prévia pinta a moldura com a cor do papel, mas não muda a imagem enviada à impressora
+    shown = paper_preview(res.image, tpl)
+    assert shown.getpixel((round(2 * ppmm), round(2 * ppmm))) != (255, 255, 255)
+    assert res.image.mode in ("L", "1")
+
+
+def test_preprinted_template_merges_rows(b2):
+    from app.templates import load_template
+
+    tpl = load_template("moldura-colorida-54x66")
+    ctx = RenderContext(event="Festa", date="2026-12-24", guest_name="Leo", guest_enabled=True)
+    res = render_label(tpl, None, ctx, (54, 66), b2, "photo")
+    assert not any("pequeno" in w for w in res.warnings)
+
+
+def test_box_outside_label_is_an_error(tmp_path):
+    from app.templates import parse_template
+
+    _, errors = parse_template({"label_mm": [54, 66], "photo": {"box_mm": [10, 10, 50, 40]}}, "x", tmp_path)
+    assert any("passa da borda" in e for e in errors)

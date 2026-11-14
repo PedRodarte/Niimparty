@@ -6,6 +6,7 @@ lê o YAML, aplica os valores padrão e aponta erros em linguagem simples.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -86,7 +87,15 @@ class Template:
     ornaments: list[Ornament] = field(default_factory=list)
     frame: dict[str, Any] = field(default_factory=dict)
     logo: dict[str, Any] = field(default_factory=dict)
+    label_mm: tuple[float, float] | None = None       # etiqueta para a qual o modelo foi feito
+    text_box_mm: tuple[float, float, float, float] | None = None
+    preprinted: dict[str, Any] = field(default_factory=dict)
     raw: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def fixed_layout(self) -> bool:
+        """Posições fixas em mm (etiquetas com moldura já impressa)."""
+        return self.photo.get("box_mm") is not None
 
     @property
     def fonts_dir(self) -> Path:
@@ -114,6 +123,20 @@ def _num(value: Any, name: str, errors: list[str], minimum: float = 0.0) -> floa
     if num < minimum:
         errors.append(f"'{name}' não pode ser menor que {minimum} (recebido: {num})")
     return num
+
+
+def _box(value: Any, name: str, errors: list[str], n: int = 4) -> tuple[float, ...] | None:
+    if value is None:
+        return None
+    try:
+        nums = tuple(float(v) for v in value)
+    except (TypeError, ValueError):
+        nums = ()
+    if len(nums) != n or any(v < 0 for v in nums):
+        what = "[x, y, largura, altura]" if n == 4 else "[largura, altura]"
+        errors.append(f"'{name}' deve ser uma lista {what} em mm, sem números negativos (recebido: {value!r})")
+        return None
+    return nums
 
 
 def parse_template(data: dict[str, Any], template_id: str, directory: Path) -> tuple[Template, list[str]]:
@@ -224,10 +247,31 @@ def parse_template(data: dict[str, Any], template_id: str, directory: Path) -> t
     if logo["position"] not in ("top", "bottom"):
         errors.append("logo.position deve ser top ou bottom")
 
+    label_mm = _box(data.get("label_mm"), "label_mm", errors, 2)
+    pre = dict(data.get("preprinted") or {})
+    if pre:
+        pre["window_mm"] = _box(pre.get("window_mm"), "preprinted.window_mm", errors)
+        colors = pre.get("preview_colors") or ["#F2C4C8"]
+        pre["preview_colors"] = [str(c) for c in (colors if isinstance(colors, list) else [colors])]
+        for c in pre["preview_colors"]:
+            if not re.fullmatch(r"#[0-9A-Fa-f]{6}", c):
+                errors.append(f"preprinted.preview_colors: cor inválida {c!r} (use #RRGGBB)")
+    if photo.get("box_mm") is not None:
+        photo["box_mm"] = _box(photo.get("box_mm"), "photo.box_mm", errors)
+    text_box = _box(data.get("text_box_mm"), "text_box_mm", errors)
+    if photo.get("box_mm") is not None and not label_mm:
+        errors.append("com photo.box_mm, informe também label_mm: [largura, altura]")
+    if label_mm:
+        for key, box in (("photo.box_mm", photo.get("box_mm")), ("text_box_mm", text_box),
+                         ("preprinted.window_mm", pre.get("window_mm"))):
+            if box and (box[0] + box[2] > label_mm[0] + 1e-6 or box[1] + box[3] > label_mm[1] + 1e-6):
+                errors.append(f"{key} passa da borda da etiqueta {label_mm[0]:g} × {label_mm[1]:g} mm")
+
     tpl = Template(
         id=template_id, dir=directory, name=name, description=str(data.get("description", "")),
         orientation=orientation, photo=photo, texts=texts, guest_field=guest,
-        ornaments=ornaments, frame=frame, logo=logo, raw=data,
+        ornaments=ornaments, frame=frame, logo=logo, label_mm=label_mm, text_box_mm=text_box,
+        preprinted=pre, raw=data,
     )
     return tpl, errors
 

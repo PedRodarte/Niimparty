@@ -139,6 +139,9 @@ class Row:
 def effective_orientation(template: Template, label_mm: tuple[float, float]) -> str:
     """Modelos em paisagem viram retrato em etiquetas quase quadradas (ex.: 50 × 50),
     onde não sobra largura para a coluna de texto ao lado da foto."""
+    if template.label_mm:  # posições fixas: vale a orientação para a qual o modelo foi desenhado
+        tw, th = template.label_mm
+        return "portrait" if tw <= th else "landscape"
     a, b = sorted(label_mm)
     if b / a >= ELONGATED:
         return "landscape"  # tira estreita (ex.: 12 × 40): foto à esquerda, texto ao lado
@@ -378,7 +381,29 @@ def render_label(
     small = min(1.0, min(label_mm) / REFERENCE_MM)
     geo = max(0.5, small)  # margens e moldura encolhem menos
 
-    strip = max(label_mm) / min(label_mm) >= ELONGATED
+    fixed = template.fixed_layout
+    strip = max(label_mm) / min(label_mm) >= ELONGATED and not fixed
+    if fixed:
+        small = geo = 1.0  # medidas absolutas: nada encolhe
+        tw_mm, th_mm = template.label_mm  # type: ignore[misc]
+        sx, sy = W / (tw_mm * ppmm), H / (th_mm * ppmm)
+        if abs(sx - 1) > 0.02 or abs(sy - 1) > 0.02:
+            warnings.append(f"este modelo foi feito para etiquetas {tw_mm:g} × {th_mm:g} mm; "
+                            "em outro tamanho as posições ficam aproximadas")
+
+        def mm_box(box) -> tuple[int, int, int, int]:
+            x, y, w, h = box
+            return (round(x * ppmm * sx), round(y * ppmm * sy), round((x + w) * ppmm * sx), round((y + h) * ppmm * sy))
+
+        fixed_photo = mm_box(template.photo["box_mm"])
+        fixed_text = mm_box(template.text_box_mm) if template.text_box_mm else             (fixed_photo[0], fixed_photo[3] + round(1.5 * ppmm), fixed_photo[2], H - round(1.5 * ppmm))
+        head = profile.printhead_mm * ppmm
+        if W > head + 1:
+            lo, hi = (W - head) / 2, (W + head) / 2
+            for what, box in (("a foto", fixed_photo), ("o texto", fixed_text)):
+                if box[0] < lo - 1 or box[2] > hi + 1:
+                    warnings.append(f"{what} passa da área que a cabeça de impressão alcança "
+                                    f"({profile.printhead_mm:g} mm no centro da etiqueta)")
     margin = float(template.photo.get("margin_mm", 2)) * ppmm * geo
     frame = dict(template.frame)
     if strip and frame.get("style") == "double":
@@ -399,7 +424,9 @@ def render_label(
     max_share = float(template.photo.get("max_share", 0.68))
     text_col_w = content_w
     landscape_box: tuple[int, int, int, int] | None = None
-    if landscape:
+    if fixed:
+        text_col_w = fixed_text[2] - fixed_text[0]
+    elif landscape:
         # no modo paisagem a foto ocupa a altura toda à esquerda; o texto vai à direita
         has_side = bool(template.texts) or template.guest_field.enabled or bool(template.logo.get("enabled"))
         content_h = cy1 - cy0
@@ -432,12 +459,16 @@ def render_label(
         gspec = TextSpec(id="guest", font=g.font, size_mm=g.size_mm, align=g.align, position=g.position)
         texts.append((gspec, fill(g.format, {**variables, "nome": name, "name": name})))
 
-    if strip:
-        # tira estreita: no máximo 2 linhas (título + o resto unido por "·"), sem logo
+    max_rows = 2 if strip else int(template.raw.get("max_rows") or 0)
+    if max_rows:
+        # tira estreita ou faixa de texto curta: no máximo N linhas; o que sobra
+        # entra na última, unido por "·"
         texts = [(replace(s, max_lines=1), t) for s, t in texts if t.strip()]
-        if len(texts) > 2:
-            rest_spec = replace(texts[1][0], id="+".join(s.id for s, _ in texts[1:]), position="bottom")
-            texts = [texts[0], (rest_spec, " · ".join(t.strip() for _, t in texts[1:]))]
+        if len(texts) > max_rows:
+            k = max_rows - 1
+            rest_spec = replace(texts[k][0], id="+".join(s.id for s, _ in texts[k:]), position="bottom")
+            texts = [*texts[:k], (rest_spec, " · ".join(t.strip() for _, t in texts[k:]))]
+    if strip:
         if logo_cfg.get("enabled"):
             warnings.append("etiqueta estreita demais para o logo; ele foi omitido")
         logo_cfg = {**logo_cfg, "enabled": False}
@@ -473,12 +504,12 @@ def render_label(
     # a escala parte do tamanho da etiqueta; se o texto ainda tomar espaço
     # demais da foto, encolhe mais (e avisa se ficar abaixo do legível)
     content_h = cy1 - cy0
-    budget = content_h * (1.0 if landscape else 0.45)
+    budget = (fixed_text[3] - fixed_text[1]) if fixed else content_h * (1.0 if landscape else 0.45)
     text_scale = small
     for _ in range(4):
         row_warnings: list[str] = []
         rows_top, rows_bottom = build_rows(text_scale, row_warnings)
-        used = block_h(rows_top) + block_h(rows_bottom) + (gap if rows_top and rows_bottom and landscape else 0)
+        used = block_h(rows_top) + block_h(rows_bottom) + (gap if rows_top and rows_bottom and (landscape or fixed) else 0)
         if used <= budget or text_scale < 0.2:
             break
         text_scale *= max(0.5, budget / used) * 0.97
@@ -489,7 +520,14 @@ def render_label(
     top_h, bottom_h = block_h(rows_top), block_h(rows_bottom)
 
     # ---- posição da foto
-    if not landscape:
+    if fixed:
+        photo_box = fixed_photo
+        col_x0, col_x1 = fixed_text[0], fixed_text[2]
+        sep_tb = gap if rows_top and rows_bottom else 0
+        total = top_h + bottom_h + sep_tb
+        start = fixed_text[1] + max(0, (fixed_text[3] - fixed_text[1] - total) / 2)
+        regions = {"top": (start, start + top_h), "bottom": (start + top_h + sep_tb, start + total)}
+    elif not landscape:
         avail_top = cy0 + (top_h + gap if rows_top else 0)
         avail_bot = cy1 - (bottom_h + gap if rows_bottom else 0)
         avail_h = max(avail_bot - avail_top, 8 * ppmm)
@@ -604,3 +642,24 @@ def _dedupe(items: list[str]) -> list[str]:
             seen.add(item)
             out.append(item)
     return out
+
+
+def paper_preview(label: Image.Image, template: Template, color: str | None = None) -> Image.Image:
+    """Simula a etiqueta impressa sobre o papel. Em etiquetas com moldura já impressa,
+    pinta a moldura com a cor do papel e deixa a janela branca. Só para mostrar na tela:
+    o que vai para a impressora é sempre a imagem original."""
+    rgb = label.convert("RGB")
+    pre = template.preprinted
+    if not pre or not template.label_mm:
+        return rgb
+    hexcolor = (color or pre["preview_colors"][0]).lstrip("#")
+    paper = Image.new("RGB", rgb.size, tuple(int(hexcolor[i:i + 2], 16) for i in (0, 2, 4)))
+    window = pre.get("window_mm")
+    if window:
+        kx, ky = rgb.width / template.label_mm[0], rgb.height / template.label_mm[1]
+        x, y, w, h = window
+        ImageDraw.Draw(paper).rectangle((round(x * kx), round(y * ky), round((x + w) * kx) - 1,
+                                         round((y + h) * ky) - 1), fill=(255, 255, 255))
+    from PIL import ImageChops
+
+    return ImageChops.multiply(paper, rgb)

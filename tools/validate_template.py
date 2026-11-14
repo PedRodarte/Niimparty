@@ -71,7 +71,7 @@ def check(name: str, sizes, profile) -> tuple[list[str], list[str]]:
         ex = (data or {}).get("example") or {}
         ctx = RenderContext(event=str(ex.get("event", "Nome do Evento")), date="2026-12-24",
                             guest_name=str(ex.get("guest", "Convidada")), placeholder_logo=True)
-        for size in sizes:
+        for size in ([tpl.label_mm] if tpl.label_mm else sizes):
             try:
                 res = render_label(tpl, None, ctx, size, profile, "photo")
             except Exception as exc:  # noqa: BLE001

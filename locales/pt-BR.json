@@ -62,5 +62,6 @@
   "plate_footer": "Sem app e sem cadastro. Sua foto sai impressa na hora.",
   "plate_ask_ssid": "Nome da rede Wi-Fi da festa (Enter para pular o QR do Wi-Fi)",
   "plate_ask_password": "Senha do Wi-Fi (fica só no .env)",
-  "plate_saved": "Placa salva em {path}"
+  "plate_saved": "Placa salva em {path}",
+  "wiz_label_fixed": "Este modelo é para etiquetas {size} mm; usando esse tamanho."
 }

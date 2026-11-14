@@ -62,5 +62,6 @@
   "plate_footer": "No app, no sign-up. Your photo prints right away.",
   "plate_ask_ssid": "Party Wi-Fi network name (Enter to skip the Wi-Fi QR)",
   "plate_ask_password": "Wi-Fi password (stays only in .env)",
-  "plate_saved": "Sign saved to {path}"
+  "plate_saved": "Sign saved to {path}",
+  "wiz_label_fixed": "This template is made for {size} mm labels; using that size."
 }

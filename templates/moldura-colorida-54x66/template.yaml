@@ -1,0 +1,50 @@
+# Para etiquetas que já vêm com moldura colorida impressa e uma janela branca
+# para a foto (ex.: rolos 54 × 66 mm vendidos para a B21 Pro / B2 Pro).
+# O Niimparty não imprime a moldura: só a foto dentro da janela e o texto na
+# faixa colorida de baixo (o preto aparece bem sobre as cores claras).
+#
+# As medidas abaixo foram tiradas da foto do anúncio. Confira com uma régua
+# no seu rolo e ajuste (tudo em mm, a partir do canto de cima à esquerda,
+# com a etiqueta em pé). Formato das caixas: [x, y, largura, altura].
+name: Moldura colorida 54 × 66
+description: Para etiquetas com moldura já impressa (janela quadrada e faixa de texto embaixo)
+orientation: portrait
+label_mm: [54, 66]
+
+preprinted:
+  window_mm: [5.8, 9.0, 42.4, 42.4]        # janela branca da etiqueta
+  preview_colors: ["#F4C7C9", "#F5EAB4", "#CCE5B8"]   # só para a prévia na tela
+
+photo:
+  aspect: "1:1"
+  box_mm: [6.4, 9.6, 41.2, 41.2]           # 0,6 mm para dentro da janela: folga se o papel andar um pouco
+
+text_box_mm: [5, 52.4, 44, 12.6]           # faixa colorida de baixo
+max_rows: 2                                # data e nome do convidado dividem a 2ª linha
+
+texts:
+  - id: title
+    label: Título
+    default: "{evento}"
+    font: InterDisplay-Bold
+    size_mm: 4.2
+    max_lines: 1
+  - id: subtitle
+    label: Data ou frase
+    default: "{data}"
+    font: InterDisplay-Medium
+    size_mm: 2.8
+    max_lines: 1
+
+guest_field:
+  enabled: true
+  label: Seu nome
+  format: "por {nome}"
+  max_chars: 24
+  font: InterDisplay-Medium
+  size_mm: 2.8
+
+ornaments: []
+example:
+  event: Festa Exemplo
+  guest: Convidado
