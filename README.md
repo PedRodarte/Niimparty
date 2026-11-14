@@ -53,8 +53,8 @@ A comunicação com a impressora usa bibliotecas da comunidade [NiimBlue](https:
 ## Instalação
 
 ```bash
-git clone https://github.com/<seu-usuario>/niimparty.git
-cd niimparty
+git clone https://github.com/PedRodarte/Niimparty.git
+cd Niimparty
 ```
 
 **Windows:** não precisa instalar nada além do Python. Dê dois cliques em `run.bat` ou rode no terminal:
@@ -182,8 +182,8 @@ MIT
 - Portuguese and English. Simulated mode generates PNG labels without a printer.
 
 ```bash
-git clone https://github.com/<your-user>/niimparty.git
-cd niimparty
+git clone https://github.com/PedRodarte/Niimparty.git
+cd Niimparty
 make run          # Windows: run.bat
 ```
 
